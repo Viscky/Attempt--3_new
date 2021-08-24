@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
@@ -12,20 +13,48 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
-    
+
     private bool m_Started = false;
     private int m_Points;
-    
+
     private bool m_GameOver = false;
 
+    //After will be everything, that I added by myself
+    public Text lastGameScore;
+    public Text recordy; 
+
     
+
+
+    //Variables to LOAD ann SAVE
+    public string enteredName;
+    public string lastPlayer;
+    public string recordName;
+    public int lastPlayerResult;
+    public int record;
+    
+
     // Start is called before the first frame update
     void Start()
     {
+        LoadRecord();
+        if (lastPlayer == null)
+        {
+            lastPlayer = enteredName;
+        }
+       
+        lastGameScore.text = "Last Game : " + lastPlayer + " " + lastPlayerResult;
+        recordy.text = "Record: " +recordName + " " + record;
+        /*
+                if (lastPlayer != null)
+                {
+                    lastGameScore.text = "Previous Game : " + lastPlayer + " " + lastPlayerResult;
+                }
+        */
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -40,6 +69,9 @@ public class MainManager : MonoBehaviour
 
     private void Update()
     {
+        Debug.Log(enteredName + lastPlayer);
+        SaveRecord();
+
         if (!m_Started)
         {
             if (Input.GetKeyDown(KeyCode.Space))
@@ -55,6 +87,8 @@ public class MainManager : MonoBehaviour
         }
         else if (m_GameOver)
         {
+            
+
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -70,7 +104,63 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        if (m_Points > record)
+        {
+            record = m_Points;
+            recordName = enteredName;
+        }
+        lastPlayer = enteredName;
+        lastPlayerResult = m_Points;
         m_GameOver = true;
         GameOverText.SetActive(true);
+        lastGameScore.text = "Last Game : " + lastPlayer + " " + lastPlayerResult;
+        recordy.text = "Record: " + recordName + " " + record;
+        SaveRecord();
+
+
+    }
+
+    //Savind and loading results
+    [System.Serializable]
+    class SaveData
+    {
+        public string enteredName;
+        public string lastPlayer;
+        public string recordName;
+
+
+        public int lastPlayerResult;
+        public int record;
+
+    }
+
+    public void SaveRecord()
+    {
+        SaveData data = new SaveData();
+        data.enteredName = enteredName;
+        data.lastPlayer = lastPlayer;
+        data.record = record;
+        data.lastPlayerResult = lastPlayerResult;
+        data.recordName = recordName;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadRecord()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            enteredName = data.enteredName;
+            lastPlayer = data.lastPlayer;
+            record = data.record;
+            lastPlayerResult = data.lastPlayerResult;
+            recordName = data.recordName;
+        }
     }
 }
